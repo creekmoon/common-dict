@@ -25,47 +25,31 @@ public interface Dict {
     public static final Map<String, List<String>> EMPTY_MAP_REVERSE = new HashMap<String, List<String>>();
 
 
-
-    /**DictMappingTest
+    /**
+     * DictMappingTest
      * 缓存字典
      * DictMapping注解会通过这个集合, 翻译对应的字典值
-     *
-     *  k1=字典类型code  k2=字典key  v=字典值
+     * <p>
+     * k1=字典类型code  k2=字典key  v=字典值
      */
     static Map<String, Map<String, String>> DICT_MAP = new ConcurrentHashMap<>(512);
 
     /**
      * 缓存字典
      * 用字典值获取字典key
-     *
-     *  k1=字典类型code  k2=字典值  v=字典key
+     * <p>
+     * k1=字典类型code  k2=字典值  v=字典key
      */
     static Map<String, Map<String, List<String>>> DICT_MAP_REVERSE = new ConcurrentHashMap<>(512);
 
-
-    /**
-     * 获取字典翻译
-     * <p>
-     * dict : {
-     * "transportType": "空运",
-     * "crenelType": "装卸"
-     * }
-     *
-     * @return
-     */
-    default JSONObject getDict() {
-        return getDict(this);
-    }
-
-
-
     /**
      * 设置字典值
+     *
      * @param dictMap
      */
     public static void setDictMap(Map<String, Map<String, String>> dictMap) {
         DICT_MAP.putAll(dictMap);
-        DICT_MAP.forEach((k,v)->{
+        DICT_MAP.forEach((k, v) -> {
             DICT_MAP_REVERSE.put(k, v.entrySet().stream().collect(Collectors.groupingBy(Map.Entry::getValue, Collectors.mapping(Map.Entry::getKey, Collectors.toList()))));
         });
     }
@@ -73,7 +57,6 @@ public interface Dict {
     public static void setGlobalBusinessPackageNames(String... basePackageNames) {
         businessPackagePathList.addAll(Arrays.asList(basePackageNames));
     }
-
 
     /**
      * 获取字典值
@@ -96,7 +79,10 @@ public interface Dict {
                 }
                 // 如果是业务对象, 则递归进入
                 if (isBusinessObjectType(field.getType())) {
-                    result.put(field.getName(), getDict(ReflectUtil.getFieldValue(object, field)));
+                    JSONObject dict = getDict(ReflectUtil.getFieldValue(object, field));
+                    if (dict != null) {
+                        result.put(field.getName(), dict);
+                    }
                     continue;
                 }
                 //如果没有DictMapping注解 则跳过
@@ -114,20 +100,6 @@ public interface Dict {
             log.error("翻译字典失败！", e);
             return new JSONObject();
         }
-    }
-
-
-    default void validate(Map<String, String> dict) {
-
-    }
-
-    /**
-     * 字典自填充, 填充到原始字段上
-     *
-     * @return
-     */
-    default void fillSelf() {
-        fillSelf(this);
     }
 
     /**
@@ -167,7 +139,6 @@ public interface Dict {
         }
     }
 
-
     public static String findPackagePath(Class<?> clazz) {
         int num = 2;
         int target = clazz.getName().indexOf(".");
@@ -177,7 +148,6 @@ public interface Dict {
         }
         return clazz.getName().substring(0, target);
     }
-
 
     /**
      * 是否为业务对象类型
@@ -228,11 +198,11 @@ public interface Dict {
      * 获取字典值
      *
      * @param sourceObject 字典对象
-     * @param fieldName  字段名
+     * @param fieldName    字段名
      * @param
      * @return
      */
-    static  String searchDictValue(Object sourceObject, String fieldName) {
+    static String searchDictValue(Object sourceObject, String fieldName) {
         Field field = ReflectUtil.getField(sourceObject.getClass(), fieldName);
         if (field == null) {
             log.error("翻译字典失败！dictObject={}, fieldName={}", sourceObject, fieldName, new RuntimeException("翻译字典失败！字段不存在！"));
@@ -254,7 +224,6 @@ public interface Dict {
         }
         return DICT_MAP.getOrDefault(dictCode, EMPTY_MAP).get(dictKey);
     }
-
 
     /**
      * 获取字典值  如果没有找到字典值,则返回原值
@@ -336,7 +305,6 @@ public interface Dict {
         return dictKeys.get(0);
     }
 
-
     /**
      * 获取字典类型编码关联的所有字典值
      *
@@ -357,5 +325,32 @@ public interface Dict {
      */
     public static Map<String, Map<String, String>> getAll() {
         return Collections.unmodifiableMap(DICT_MAP);
+    }
+
+    /**
+     * 获取字典翻译
+     * <p>
+     * dict : {
+     * "transportType": "空运",
+     * "crenelType": "装卸"
+     * }
+     *
+     * @return
+     */
+    default JSONObject getDict() {
+        return getDict(this);
+    }
+
+    default void validate(Map<String, String> dict) {
+
+    }
+
+    /**
+     * 字典自填充, 填充到原始字段上
+     *
+     * @return
+     */
+    default void fillSelf() {
+        fillSelf(this);
     }
 }

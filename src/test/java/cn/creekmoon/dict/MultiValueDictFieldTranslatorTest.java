@@ -75,31 +75,31 @@ class MultiValueDictFieldTranslatorTest {
     public static class MultiValueTestObject implements Dict {
         
         // 完全匹配的多值字段：1,2,3 -> 未开始,进行中,已完成
-        @DictMapping(fieldTranslator = MultiValueDictFieldTranslator.class)
+        @DictMapping
         private String taskStatus = "1,2,3";
         
         // 部分匹配的多值字段：1,2,3,4 -> 未开始,进行中,已完成,4
-        @DictMapping(dictCode = "taskStatus", fieldTranslator = MultiValueDictFieldTranslator.class)
+        @DictMapping(dictCode = "taskStatus")
         private String mixedStatus = "1,2,3,4";
         
         // 带后缀的多值字段：HIGH,LOW -> 高优先级任务,低优先级任务
-        @DictMapping(dictCode = "priority", suffix = "任务", fieldTranslator = MultiValueDictFieldTranslator.class)
+        @DictMapping(dictCode = "priority", suffix = "任务")
         private String priorityWithSuffix = "HIGH,LOW";
         
         // 没有匹配的多值字段：X,Y,Z -> X,Y,Z
-        @DictMapping(dictCode = "taskStatus", fieldTranslator = MultiValueDictFieldTranslator.class)
+        @DictMapping(dictCode = "taskStatus")
         private String noMatchStatus = "X,Y,Z";
         
         // 空值测试
-        @DictMapping(fieldTranslator = MultiValueDictFieldTranslator.class)
+        @DictMapping
         private String nullStatus = null;
         
         // 空字符串测试
-        @DictMapping(suffix = "状态", fieldTranslator = MultiValueDictFieldTranslator.class)
+        @DictMapping(suffix = "状态")
         private String emptyStatus = "";
         
         // 单个值测试：2 -> 进行中
-        @DictMapping(dictCode = "taskStatus", fieldTranslator = MultiValueDictFieldTranslator.class)
+        @DictMapping(dictCode = "taskStatus")
         private String singleStatus = "2";
     }
 }

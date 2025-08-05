@@ -333,7 +333,7 @@ public interface Dict {
         if (dictKeys.size() > 1) {
             throw new RuntimeException(StrFormatter.format("字典项：{}，获取的结果不唯一，请检查数据", dictValue));
         }
-        return dictKeys.getFirst();
+        return dictKeys.get(0);
     }
 
 

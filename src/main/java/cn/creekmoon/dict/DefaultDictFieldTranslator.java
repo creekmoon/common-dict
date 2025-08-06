@@ -1,7 +1,6 @@
 package cn.creekmoon.dict;
 
 
-import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 
 import java.lang.reflect.Field;
@@ -26,10 +25,10 @@ public class DefaultDictFieldTranslator implements DictFieldTranslator {
         if (fieldValue == null) {
             return null;
         }
-        
+
         // 转换为字符串
         String fieldValueStr = fieldValue.toString();
-        
+
         // 如果字符串为空，直接返回空字符串加后缀
         if (StrUtil.isBlank(fieldValueStr)) {
             return fieldValueStr;
@@ -47,14 +46,14 @@ public class DefaultDictFieldTranslator implements DictFieldTranslator {
         if (fieldValueStr.contains(",")) {
             // 按逗号分隔字段值
             String[] values = fieldValueStr.split(",");
-            
+
             // 对每个值进行字典翻译，并添加后缀
             String translatedResult = Arrays.stream(values)
                     .map(String::trim)  // 去除空格
                     .map(value -> Dict.searchDictValueOrSelf(dictCode, value))  // 翻译每个值，如果没找到则返回原值
                     .map(translatedValue -> translatedValue + suffix)  // 给每个翻译后的值添加后缀
                     .collect(Collectors.joining(","));  // 用逗号重新拼接
-            
+
             return translatedResult;
         } else {
             // 单值翻译

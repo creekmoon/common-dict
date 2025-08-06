@@ -72,27 +72,30 @@ public interface Dict {
         try {
             Field[] fields = ReflectUtil.getFields(object.getClass());
             for (Field field : fields) {
-                // 如果是集合类型
-                if (object instanceof Collection collection) {
-                    result.put(field.getName(), collection.stream().map(Dict::getDict).collect(Collectors.toList()));
-                    continue;
-                }
-                // 如果是业务对象, 则递归进入
-                if (isBusinessObjectType(field.getType())) {
+                boolean existsAnnotation = !field.isAnnotationPresent(DictMapping.class);
+                // 如果没有DictMapping注解且是业务对象, 则递归进入
+                if (existsAnnotation && isBusinessObjectType(field.getType())) {
                     JSONObject dict = getDict(ReflectUtil.getFieldValue(object, field));
                     if (dict != null) {
                         result.put(field.getName(), dict);
                     }
                     continue;
                 }
+                // 如果没有DictMapping注解且是集合类型, 则尝试递归进入
+                if (existsAnnotation && Collection.class.isAssignableFrom(field.getType())) {
+                    result.put(field.getName(), ((Collection) ReflectUtil.getFieldValue(object, field)).stream().map(Dict::getDict).collect(Collectors.toList()));
+                    continue;
+                }
                 //如果没有DictMapping注解 则跳过
-                if (!field.isAnnotationPresent(DictMapping.class)) {
+                if (existsAnnotation) {
                     continue;
                 }
                 // 如果已经翻译成功KEY,则跳过
                 if (result.get(field.getName()) != null) {
                     continue;
                 }
+
+                // 走到这里的, 应该是有注解的字段
                 result.put(field.getName(), searchDictValue(object, field));
             }
             return result;
@@ -200,9 +203,9 @@ public interface Dict {
      * @param sourceObject 字典对象
      * @param fieldName    字段名
      * @param
-     * @return
+     * @return 返回的对象类型 要么是String， 要么是 Collection<String> 取决于你的fieldName对应类型
      */
-    static String searchDictValue(Object sourceObject, String fieldName) {
+    static Object searchDictValue(Object sourceObject, String fieldName) {
         Field field = ReflectUtil.getField(sourceObject.getClass(), fieldName);
         if (field == null) {
             log.error("翻译字典失败！dictObject={}, fieldName={}", sourceObject, fieldName, new RuntimeException("翻译字典失败！字段不存在！"));
@@ -245,13 +248,14 @@ public interface Dict {
 
     /**
      * 翻译字典值
+     * 此方法为最底层方法
      *
      * @param dictObject 字典对象
-     * @param field
+     * @param field      要求字段上需要有@DictMapping注解 且是直接可翻译的字段. 支持String 或者 Collection类型
      * @param <T>
-     * @return
+     * @return 返回的对象类型 要么是String， 要么是 Collection<String>
      */
-    public static <T> String searchDictValue(T dictObject, Field field) {
+    public static <T> Object searchDictValue(T dictObject, Field field) {
 
         Field[] sourceFields = ReflectUtil.getFields(dictObject.getClass());
         for (Field sourcefield : sourceFields) {
@@ -266,20 +270,31 @@ public interface Dict {
                 Object fieldValue = field.get(dictObject);
                 field.setAccessible(false);
 
-                // 尝试对byte类型进行校验,如果校验出异常值, 直接返回异常值
+                // 查找翻译器
                 DictMapping annotation = field.getAnnotation(DictMapping.class);
                 if (!translators.containsKey(annotation.fieldTranslator())) {
                     try {
                         translators.put(annotation.fieldTranslator(), (DictFieldTranslator) annotation.fieldTranslator().getDeclaredConstructor().newInstance());
                     } catch (Exception e) {
                         RuntimeException runtimeException = new RuntimeException("字典解析失败! 无法获取到翻译器");
-                        log.error("字典解析失败! 无法实例化到字段翻译器! 检查已经实现了DictFieldTranslator接口? field=[{}] annotation=[{}]", field, annotation, runtimeException);
+                        log.error("字典解析失败! 请检查是否已经实现了DictFieldTranslator接口? field=[{}] annotation=[{}]", field, annotation, runtimeException);
                         throw runtimeException;
                     }
                 }
+                DictFieldTranslator dictFieldTranslator = translators.get(annotation.fieldTranslator());
 
-                //尝试查找字典值
-                return translators.get(annotation.fieldTranslator()).searchDictValue(dictObject, sourcefield, fieldValue, annotation);
+                //如果是集合
+                if (Collection.class.isAssignableFrom(sourcefield.getType())) {
+                    Object collect = ((Collection) fieldValue)
+                            .stream()
+                            .map(x -> dictFieldTranslator.searchDictValue(dictObject, sourcefield, x, annotation))
+                            .collect(Collectors.toList());
+                    return collect;
+                }
+
+
+                //如果是基本类型
+                return dictFieldTranslator.searchDictValue(dictObject, sourcefield, fieldValue, annotation);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }

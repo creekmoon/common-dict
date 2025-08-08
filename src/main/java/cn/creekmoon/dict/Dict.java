@@ -42,16 +42,28 @@ public interface Dict {
      */
     static Map<String, Map<String, List<String>>> DICT_MAP_REVERSE = new ConcurrentHashMap<>(512);
 
+
     /**
      * 设置字典值
      *
      * @param dictMap
      */
-    public static void setDictMap(Map<String, Map<String, String>> dictMap) {
+    public static void addDictMap(Map<String, Map<String, String>> dictMap) {
         DICT_MAP.putAll(dictMap);
         DICT_MAP.forEach((k, v) -> {
             DICT_MAP_REVERSE.put(k, v.entrySet().stream().collect(Collectors.groupingBy(Map.Entry::getValue, Collectors.mapping(Map.Entry::getKey, Collectors.toList()))));
         });
+    }
+
+
+    /**
+     * 设置字典值
+     *
+     * @param dictMap
+     */
+    @Deprecated
+    public static void setDictMap(Map<String, Map<String, String>> dictMap) {
+       addDictMap(dictMap);
     }
 
     public static void setGlobalBusinessPackageNames(String... basePackageNames) {

@@ -44,6 +44,7 @@ public class DictHttpRefreshConfig {
             String body = httpResponse.body();
             String currentMD5 = DigestUtil.md5Hex(body);
             if (lastMD5.equals(currentMD5)) {
+                log.info("[定时刷新字典]======字典定时检查与远端一致无须更新====");
                 return;
             }
             JSONObject jsonObject = JSONObject.parseObject(body);

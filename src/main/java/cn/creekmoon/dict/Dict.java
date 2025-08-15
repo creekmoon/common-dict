@@ -63,7 +63,7 @@ public interface Dict {
      */
     @Deprecated
     public static void setDictMap(Map<String, Map<String, String>> dictMap) {
-       addDictMap(dictMap);
+        addDictMap(dictMap);
     }
 
     public static void setGlobalBusinessPackageNames(String... basePackageNames) {
@@ -296,7 +296,7 @@ public interface Dict {
                 DictFieldTranslator dictFieldTranslator = translators.get(annotation.fieldTranslator());
 
                 //如果是集合
-                if (Collection.class.isAssignableFrom(sourcefield.getType())) {
+                if (Collection.class.isAssignableFrom(sourcefield.getType()) && fieldValue != null) {
                     Object collect = ((Collection) fieldValue)
                             .stream()
                             .map(x -> dictFieldTranslator.searchDictValue(dictObject, sourcefield, x, annotation))

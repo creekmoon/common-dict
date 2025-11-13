@@ -95,7 +95,11 @@ public interface Dict {
                 }
                 // 如果没有DictMapping注解且是集合类型, 则尝试递归进入
                 if (existsAnnotation && Collection.class.isAssignableFrom(field.getType())) {
-                    result.put(field.getName(), ((Collection) ReflectUtil.getFieldValue(object, field)).stream().map(Dict::getDict).collect(Collectors.toList()));
+                    Object collectionValue = ReflectUtil.getFieldValue(object, field);
+                    if (collectionValue == null) {
+                        continue;
+                    }
+                    result.put(field.getName(), ((Collection) collectionValue).stream().map(Dict::getDict).collect(Collectors.toList()));
                     continue;
                 }
                 //如果没有DictMapping注解 则跳过

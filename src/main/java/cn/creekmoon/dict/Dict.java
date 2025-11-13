@@ -84,8 +84,8 @@ public interface Dict {
         try {
             Field[] fields = ReflectUtil.getFields(object.getClass());
             for (Field field : fields) {
-                boolean existsAnnotation = !field.isAnnotationPresent(DictMapping.class);
-                // 如果没有DictMapping注解且是业务对象, 则递归进入
+                boolean existsAnnotation = Arrays.stream(field.getDeclaredAnnotations()).anyMatch(a -> a.annotationType() == DictMapping.class);
+                // 如果有DictMapping注解且是业务对象, 则递归进入
                 if (existsAnnotation && isBusinessObjectType(field.getType())) {
                     JSONObject dict = getDict(ReflectUtil.getFieldValue(object, field));
                     if (dict != null) {
@@ -93,7 +93,7 @@ public interface Dict {
                     }
                     continue;
                 }
-                // 如果没有DictMapping注解且是集合类型, 则尝试递归进入
+                // 如果有DictMapping注解且是集合类型, 则尝试递归进入
                 if (existsAnnotation && Collection.class.isAssignableFrom(field.getType())) {
                     Object collectionValue = ReflectUtil.getFieldValue(object, field);
                     if (collectionValue == null) {
@@ -103,7 +103,7 @@ public interface Dict {
                     continue;
                 }
                 //如果没有DictMapping注解 则跳过
-                if (existsAnnotation) {
+                if (!existsAnnotation) {
                     continue;
                 }
                 // 如果已经翻译成功KEY,则跳过
